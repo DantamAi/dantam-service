@@ -1,0 +1,7 @@
+import {userAccess} from '@/lib/access-model';
+import {getChatGPTUser} from '@/app/chatgpt-auth';
+import {accessRoster,getAccess,setUserAccess} from '@/lib/access';
+import {permittedCatalog} from '@/lib/authorized-tickets';
+export const dynamic='force-dynamic';
+export async function GET(req:Request){const u=await getChatGPTUser();if(!u)return Response.json({error:'Sign in required.'},{status:401});try{if(new URL(req.url).searchParams.has('manage'))return Response.json(await accessRoster(u.email),{headers:{'Cache-Control':'no-store'}});const access=await getAccess(u.email);return Response.json({access,user:u.email,catalog:access.enabled&&(access.areas.length)?await permittedCatalog(u.email):{products:[],modulesByProduct:{}}},{headers:{'Cache-Control':'no-store'}});}catch(e){return Response.json({error:(e as Error).message},{status:403});}}
+export async function POST(req:Request){const u=await getChatGPTUser();if(!u)return Response.json({error:'Sign in required.'},{status:401});if(req.headers.get('origin')&&req.headers.get('origin')!==new URL(req.url).origin)return Response.json({error:'Invalid origin.'},{status:403});try{const b:any=await req.json();const policy=await setUserAccess(b.user,b.version,u.email);const self=userAccess(policy,u.email);if(!self.enabled||!self.workspaceAdmin)return Response.json({saved:true,accessChanged:true});return Response.json(await accessRoster(u.email));}catch(e){return Response.json({error:(e as Error).message},{status:403});}}

@@ -1,0 +1,35 @@
+import {normalizeModule} from './modules';
+// Optional import, never applied in a migration. Source: QA review, 17 October 2026.
+const records=[
+['DQA-009','Partial progress removes remaining grouped-teeth mapping','High','Teeth mapping','Triage','Upper Front quantity3 progressed by1: remaining Proposed2 becomes General; Opted1 retains Upper Front. Quantity and item discounts reconcile. Group default quantity1 is intended.'],
+['CLIN-001','Unassessed history implies no systemic illness','High','Patient records','Triage','Blank manual case states No systemic chronic illnesses detected without an assessment.'],
+['DANTAM-002','Workspace totals omit overall discount','High','Billing','In progress','New line quantities and item discounts reconcile. Case net12000 vs workspace12100; overall100 omitted. Legacy allocation retest remains pending.'],
+['QA-03','Manually entered pain intensity does not persist','High','Case sheets','Triage','Manual6/10 becomes0 after confirmed commit and refresh. Explicit audio6/10 persists.'],
+['QA-13','Patient preview omits saved clinical sections','High','Reports & exports','Triage','Preview omits history, home care, education and additional notes.'],
+['QA-18','XLSX export misrepresents saved clinical content','High','Reports & exports','Triage','Saved complaint exported as N/A; documented history exported as None Documented.'],
+['TIME-001','Appointment times differ across screens','High','Appointments','Triage','Fresh booking15:00 appears03:00PM in registry and08:30PM in patient profile, a5h30 difference.'],
+['APT-STATUS-001','Completed appointment remains upcoming','Medium','Appointments','Triage','Future appointment marked Completed still appears in dashboard Upcoming Appointments and its count.'],
+['BIL-VALID-002','Negative invoice unit price lacks validation','Medium','Billing','Triage','Draft unit price-100 produces negative subtotal and misleading discount error; finalize disabled. No invoice finalized.'],
+['COM-COUNT-001','Delivered KPI disagrees with message history','Medium','Communications','Blocked','Owner-view comparison needed under identical date scope. Lead Dentist has no Communication Dashboard.'],
+['DQA-002','Advised investigations filed as treatment','Medium','Audio scribe','Triage','IOPA and periodontal charting in source audio become proposed treatments; generated Investigations empty after commit.'],
+['DQA-005','Audio drops medication and allergy negatives','Medium','Audio scribe','Triage','Explicit medical, medication and allergy negatives are reduced to generic history. Later audio also replaces saved history.'],
+['DQA-006','Education explanation replaced with home care','Medium','Audio scribe','Triage','Vitality-testing explanation becomes brushing advice. Later audio overwrites correct saved manual education.'],
+['DQA-007','No-treatment-performed note omitted','Medium','Audio scribe','Ready for QA','Not reproduced in additional-audio run, but same statement already existed. Fresh-case extraction still needs verification; not closed.'],
+['DQA-008','Missing pain score displayed as measured zero','Medium','Case sheets','Triage','Blank manual draft immediately displays0/10 without supplied score. Omitted-score audio not retested.'],
+['QA-06','Manual education retention across audio','Medium','Case sheets','In progress','Manual section submit, commit and refresh retains exact text; later audio replaces it. Manual path passes; cross-audio retention fails.'],
+['QA-14','Patient-facing note comment missing from preview','Medium','Reports & exports','Triage','Saved patient-facing comment omitted from preview; internal remark correctly excluded.'],
+['QA-20','Assigned clinician role inconsistent','Medium','Settings & access','Triage','Dr Ram Kumar selected as Dentist, but case labels him Medical Director.'],
+['QA-21','Urgency labels and uptake need agreed rules','Medium','Case sheets','Triage','Product decision needed: Critical/85% in draft versus Routine in preview.'],
+['QA-24','Audit log controls need visible feedback','Medium','User experience','Closed','Verified17Oct: treatment and note audit log controls resolve to dated creator entries.'],
+['TIME-002','Different form default dates','Medium','Appointments','Ready for QA','Not reproduced17Oct: appointment and billing defaults agree. Midnight/timezone-boundary retest needed before closure.'],
+['VAL-001','Supported phone validation needs decision','Medium','Patient records','Triage','Product decision needed for supported countries, formats and QA exemptions. Existing zero-prefixed synthetic numbers retained.'],
+['QA-12','Typed notes incorrectly labelled AUDIO','Low','Case sheets','Triage','Typed note saved without microphone use still displays AUDIO.'],
+['QA-23','Inconsistent date display formats','Low','User experience','Triage','Preview mixes OCT17,2026 and10/17/2026; registry uses2026-10-17.'],
+['SEARCH-001','Add legacy-ID patient search','Low','Patient records','Backlog','LegacyQA-20261011-01 finds no patient; phone finds same patient. Standard DAN patient ID search works.'],
+['UX-001','Remove mixed KOSMO branding','Low','User experience','Triage','Patient profile and dashboard still show KOSMO alongside Dantam.'],
+['UX-002','Provide accessible names for icon buttons','Low','User experience','Triage','Unnamed icon actions remain in case, note and billing panels.'],
+['UX-003','Prescription panel has unrelated implant heading','Low','User experience','Triage','Prescription and Notes New panels display PRECISION IMPLANT WORKSPACE: COMP... heading.'],
+['UX-004','Privilege button and panel terminology differ','Low','Settings & access','Triage','Custom Privileges opens Custom Templates.'],
+['COPY-001','Verify standalone patient print/PDF','Low','Reports & exports','New','Unverified: Patient Copy produced no visible preview/new tab/download in cloud browser. Requires print-capable browser check.']
+];
+export const qaImport=records.map(([sourceId,title,priority,module,status,actual])=>({sourceId,title,priority,module:normalizeModule(sourceId,module),status,actual,type:sourceId==='SEARCH-001'?'Requirement':'Bug',assignee:'',description:'Imported summary of the documented Dantam QA ticket. Evidence reviewed 17 October 2026. Full original tracker remains the source for historical details.',expected:'Preserve recorded content and keep status, mapping and totals consistent across supported views.',steps:'Reproduce the scenario described in the latest evidence; confirm save, refresh and reopen.',release:'',due:''}));

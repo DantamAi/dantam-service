@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1792210422740,
+      "tag": "0000_curved_lizard",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792212929967,
+      "tag": "0001_vengeful_spirit",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792220888540,
+      "tag": "0002_spooky_molly_hayes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792223601112,
+      "tag": "0003_damp_zodiak",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792227859778,
+      "tag": "0004_sparkling_tigra",
+      "breakpoints": true
+    }
+  ]
+}

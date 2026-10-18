@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import {readFileSync} from 'node:fs';
+const source=ts.transpileModule(readFileSync('lib/ticket-insights.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const {auditFacts,ageSummary,elapsedHours,durationLabel}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const event=(id,action,author,created)=>({id,ticketId:1,action,author,created});
+const imported=[event(1,'Imported QA review summary','Importer','2026-10-01T00:00:00Z')];
+let facts=auditFacts({status:'Closed'},imported);assert.equal(facts.createdBy,'Not recorded');assert.equal(facts.importedBy,'Importer');assert.equal(facts.resolvedBy,'Not recorded');assert.equal(facts.resolvedAt,'');
+const history=[event(1,'Ticket created','Creator','2026-10-01T00:00:00Z'),event(2,'Updated title · Stage: In progress → Resolved · Updated actual','Resolver','2026-10-02T00:00:00Z'),event(3,'Stage: Resolved → Closed','Closer','2026-10-03T00:00:00Z')];
+facts=auditFacts({status:'Closed'},history);assert.equal(facts.createdBy,'Creator');assert.equal(facts.resolvedBy,'Resolver');assert.equal(facts.closedBy,'Closer');assert.equal(facts.resolvedAt,'2026-10-02T00:00:00Z');
+history.push(event(4,'Stage: Closed → In progress','Reviewer','2026-10-04T00:00:00Z'));
+facts=auditFacts({status:'In progress'},history);assert.equal(facts.reopenedCount,1);assert.equal(facts.resolvedAt,'');assert.equal(facts.resolvedBy,'');
+history.push(event(5,'Stage: In progress → Closed','Second resolver','2026-10-05T00:00:00Z'));
+facts=auditFacts({status:'Closed'},history);assert.equal(facts.resolvedBy,'Second resolver');assert.equal(facts.resolvedAt,'2026-10-05T00:00:00Z');assert.equal(facts.closedBy,'Second resolver');assert.equal(facts.contributors.length,5);
+assert.deepEqual(ageSummary([1,2,9,NaN]),{count:3,avg:4,min:1,max:9});assert.deepEqual(ageSummary([]),{count:0,avg:null,min:null,max:null});
+assert.equal(elapsedHours('2026-10-01T00:00:00Z',Date.parse('2026-10-02T00:00:00Z')),24);assert.equal(durationLabel(24),'1d 0h');assert.equal(durationLabel(null),'—');assert.equal(elapsedHours('2026-10-02',Date.parse('2026-10-01')),0);
+assert.equal(auditFacts({status:'New'},[event(1,'Ticket created · Delivery date: 2026-11-01','Creator','2026-10-01')]).createdBy,'Creator');
+console.log('Analytics: import attribution, separate resolver/closer, combined edits, reopening cycles, age averages/min/max and empty cohorts passed.');
