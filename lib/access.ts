@@ -1,3 +1,4 @@
+import {readStoredProjects} from './project-storage';
 import {env} from 'cloudflare:workers';
 import {getCatalog} from './catalog';
 import {supportActions,projectProducts,requireAdmin,userAccess,changeUser,type AccessPolicy} from './access-model';
@@ -12,15 +13,15 @@ export async function getAccessPolicy(d=db()):Promise<AccessPolicy>{
 export async function getAccess(email:string,d=db()){return userAccess(await getAccessPolicy(d),email);}
 export async function accessRoster(email:string,d=db()){
  const policy=await getAccessPolicy(d);requireAdmin(userAccess(policy,email));
- const rows=await d.prepare('SELECT data FROM planning_projects').all<{data:string}>();
- const projects=rows.results.map(r=>JSON.parse(r.data)).map(p=>({id:p.id,name:p.name,products:projectProducts(p),members:p.members}));
+ const records=await readStoredProjects(d);
+ const projects=records.map(p=>({id:p.id,name:p.name,products:projectProducts(p),members:p.members}));
  return {policy,projects,catalog:await getCatalog()};
 }
 export async function setUserAccess(input:any,version:number,email:string,d=db()){
  const policy=await getAccessPolicy(d);requireAdmin(userAccess(policy,email));
  if(!Number.isInteger(version)||version!==policy.version)throw Error('Access settings changed. Refresh before saving.');
- const rows=await d.prepare('SELECT id FROM planning_projects').all<{id:string}>();
- const updated=changeUser(policy,input,email,(await getCatalog()).products,rows.results.map(r=>r.id));
+ const records=await readStoredProjects(d);
+ const updated=changeUser(policy,input,email,(await getCatalog()).products,records.map(r=>r.id));
  if(updated===policy)return policy;
  const result=await d.prepare('UPDATE workspace_access SET data=?,version=? WHERE id=? AND version=?').bind(JSON.stringify(updated),updated.version,'workspace',version).run();
  if(!result.meta.changes)throw Error('Another access update was saved first. Refresh and retry.');return updated;

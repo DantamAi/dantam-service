@@ -36,6 +36,13 @@
       "when": 1792227859778,
       "tag": "0004_sparkling_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792369598547,
+      "tag": "0005_jittery_penance",
+      "breakpoints": true
     }
   ]
 }

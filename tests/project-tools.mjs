@@ -10,14 +10,14 @@ const sql=new DatabaseSync(':memory:');sql.exec('CREATE TABLE planning_projects(
 const db={prepare(query){let args=[];return {bind(...v){args=v;return this;},async first(){return sql.prepare(query).get(...args)||null;},async all(){return {results:sql.prepare(query).all(...args)};},async run(){return {meta:{changes:sql.prepare(query).run(...args).changes}};}};}};
 globalThis.__projectToolDb=db;
 const accessRuntime=await accessFixture(db,['admin@example.test','tech@example.test','business@example.test','viewer@example.test']);
-let service=readFileSync('lib/projects.ts','utf8').replace("import {env} from 'cloudflare:workers';","const env={DB:globalThis.__projectToolDb};").replace("'./project-model'",JSON.stringify(model)).replace("'./access'",JSON.stringify(accessRuntime.accessUrl)).replace("'./access-model'",JSON.stringify(accessRuntime.accessModelUrl));
+let service=readFileSync('lib/projects.ts','utf8').replace("import {env} from 'cloudflare:workers';","const env={DB:globalThis.__projectToolDb};").replace("'./project-model'",JSON.stringify(model)).replace("'./access'",JSON.stringify(accessRuntime.accessUrl)).replace("'./access-model'",JSON.stringify(accessRuntime.accessModelUrl)).replace("'./project-storage'",JSON.stringify(accessRuntime.storageUrl));
 const serviceUrl=url(compile(service));
 let toolSrc=readFileSync('lib/project-tools.ts','utf8').replace("'./projects'",JSON.stringify(serviceUrl)).replace("'./project-model'",JSON.stringify(model));
 const {callProjectTool:call,projectToolDefinitions}=await import(url(compile(toolSrc)));
 const admin='admin@example.test',tech='tech@example.test',business='business@example.test',viewer='viewer@example.test',outsider='outsider@example.test';
 let p=await call('create_project',{name:'CRM',description:'Original'},admin);
-const persist=()=>sql.prepare('UPDATE planning_projects SET data=? WHERE id=?').run(JSON.stringify(p),p.id);
-p.members.push({email:tech,role:'Tech lead'},{email:business,role:'Business lead'},{email:viewer,role:'Viewer'});persist();
+const persist=async()=>{assert.equal(await (await import(accessRuntime.storageUrl)).writeStoredProject(p,db,p.version),true);};
+p.members.push({email:tech,role:'Tech lead'},{email:business,role:'Business lead'},{email:viewer,role:'Viewer'});await persist();
 assert.equal((await call('list_projects',{},outsider)).length,0);
 await assert.rejects(()=>call('get_project',{id:p.id},outsider),/unavailable/);
 await assert.rejects(()=>call('update_project',{id:p.id,version:p.version,description:'Hacked'},viewer),/Viewers/);

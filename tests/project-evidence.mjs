@@ -14,15 +14,15 @@ const db={prepare(query){let args=[];return {bind(...v){args=v;return this;},asy
 const objects=new Map(),deleted=[];const bucket={async put(k,v){objects.set(k,v);},async get(k){const body=objects.get(k);return body?{body}:null;},async delete(k){objects.delete(k);deleted.push(k);}};
 globalThis.__projectEvidenceTest={DB:db,BUCKET:bucket};
 const accessRuntime=await accessFixture(db,['admin@example.test','viewer@example.test','other@example.test']);
-let src=readFileSync('lib/projects.ts','utf8').replace("import {env} from 'cloudflare:workers';","const env=globalThis.__projectEvidenceTest;").replace("'./project-model'",JSON.stringify(modelUrl)).replace("'./access'",JSON.stringify(accessRuntime.accessUrl)).replace("'./access-model'",JSON.stringify(accessRuntime.accessModelUrl));
+let src=readFileSync('lib/projects.ts','utf8').replace("import {env} from 'cloudflare:workers';","const env=globalThis.__projectEvidenceTest;").replace("'./project-model'",JSON.stringify(modelUrl)).replace("'./access'",JSON.stringify(accessRuntime.accessUrl)).replace("'./access-model'",JSON.stringify(accessRuntime.accessModelUrl)).replace("'./project-storage'",JSON.stringify(accessRuntime.storageUrl));
 const serviceUrl=url(compile(src));const service=await import(serviceUrl);
 const validationUrl=url(compile(readFileSync('lib/attachment-validation.ts','utf8')));
-src=readFileSync('lib/project-evidence.ts','utf8').replace("import {env} from 'cloudflare:workers';","const env=globalThis.__projectEvidenceTest;").replace("'./project-model'",JSON.stringify(modelUrl)).replace("'./projects'",JSON.stringify(serviceUrl)).replace("'./attachment-validation'",JSON.stringify(validationUrl)).replace("'./access'",JSON.stringify(accessRuntime.accessUrl)).replace("'./access-model'",JSON.stringify(accessRuntime.accessModelUrl));
+src=readFileSync('lib/project-evidence.ts','utf8').replace("import {env} from 'cloudflare:workers';","const env=globalThis.__projectEvidenceTest;").replace("'./project-model'",JSON.stringify(modelUrl)).replace("'./projects'",JSON.stringify(serviceUrl)).replace("'./attachment-validation'",JSON.stringify(validationUrl)).replace("'./access'",JSON.stringify(accessRuntime.accessUrl)).replace("'./access-model'",JSON.stringify(accessRuntime.accessModelUrl)).replace("'./project-storage'",JSON.stringify(accessRuntime.storageUrl));
 const {addProjectEvidence:add,readProjectEvidence:read}=await import(url(compile(src)));
 const admin='admin@example.test',viewer='viewer@example.test',outsider='outsider@example.test',other='other@example.test';
 let p=await service.saveProjectAction({action:'create',name:'Evidence project'},admin);
 assert.equal(p.createdBy,admin);const created=p.created;
-p.members.push({email:viewer,role:'Viewer'});sql.prepare('UPDATE planning_projects SET data=? WHERE id=?').run(JSON.stringify(p),p.id);
+p.members.push({email:viewer,role:'Viewer'});await (await import(accessRuntime.storageUrl)).writeStoredProject(p,db,p.version);
 const title='Audited scope';p=await service.saveProjectAction({action:'item',id:p.id,version:p.version,item:{title,description:'x',acceptance:'x',exclusions:'',product:'CRM App',module:'Voice',owner:'',start:'',end:'',estimate:'',dependencies:[],tickets:'',source:''}},admin);
 const item=p.items[0];assert.equal(item.createdBy,admin);const itemCreated=item.created;
 p=await service.saveProjectAction({action:'item',id:p.id,version:p.version,item:{...item,createdBy:outsider,created:'1900-01-01',description:'Revised'}},admin);assert.equal(p.items[0].created,itemCreated);assert.equal(p.items[0].createdBy,admin);assert.equal(p.created,created);

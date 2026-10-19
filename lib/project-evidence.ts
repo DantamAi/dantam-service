@@ -1,3 +1,4 @@
+import {writeStoredProject} from './project-storage';
 import {getAccess} from './access';
 import {projectRole} from './access-model';
 import {env} from 'cloudflare:workers';
@@ -21,8 +22,8 @@ export async function addProjectEvidence(projectId:string,version:number,itemId:
   p.attachments=[...(p.attachments||[]),a];p.history.unshift({id:crypto.randomUUID(),itemId,author:a.author,text:'Attachment uploaded: '+safeName+(caption?' — '+caption:''),created:now});
   p.updated=now;p.updatedBy=a.author;const scope=p.items.find(i=>i.id===itemId);if(scope){scope.updated=now;scope.updatedBy=a.author;}
   p.version++;
-  const result=await d.prepare('UPDATE planning_projects SET data=?,version=? WHERE id=? AND version=?').bind(JSON.stringify(p),p.version,p.id,version).run();
-  if(!result.meta.changes)throw new ProjectError('Another update was saved first. Refresh and retry.',409);
+  const saved=await writeStoredProject(p,d,version);
+  if(!saved)throw new ProjectError('Another update was saved first. Refresh and retry.',409);
   return {attachment:projectEvidenceView(p.id,a),project:await getProject(p.id,email,d)};
  }catch(e){await bucket.delete(objectKey);throw e;}
 }
